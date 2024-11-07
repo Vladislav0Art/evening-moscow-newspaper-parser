@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+from typing import List, Union
+from dataclasses import dataclass
 import logging
 import os
 
@@ -7,8 +9,25 @@ urls = [
     "https://electro.nekrasovka.ru/books/6173751/pages/4"
 ]
 
-cinemas = [
-    "Метрополь", "Ударник", "Орион",
+
+@dataclass
+class Cinema:
+    name: str
+    word_breaks: List[int]
+
+    def __init__(self, name: str, word_breaks: Union[List[int], None] = None):
+        # 'my|word'
+        #  01|23456 -> i = 1
+        if word_breaks is None:
+            word_breaks = [i for i, _ in enumerate(name)] + [len(name)]
+        self.name = name
+        self.word_breaks = word_breaks
+
+
+cinemas: List[Cinema] = [
+    Cinema(name="Метрополь", word_breaks=[2, 4, 6]),
+    Cinema(name="Ударник"),
+    Cinema(name="Орион"),
 ]
 
 
@@ -21,8 +40,50 @@ logging.basicConfig(
     ]
 )
 
+@dataclass
+class Entry:
+    start_index: int
+    word_break: Union[int, None] = None
 
-def main(urls, cinemas):
+def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[Entry]:
+    entry_indicies: List[Entry] = []
+
+    def word_present(word: str, text: str, start: int) -> bool:
+        len = len(word)
+        end = start + len
+        return text[start:end] == word
+
+    def break_at(word: str, word_break: int) -> str:
+        return word[:word_break] + word_break_separator + word[word_break:]
+
+    for i in range(len(text)):
+        if text[i] == cinema.name[0]:
+            found = False
+            word_break_index: Union[int, None] = None
+
+            if word_present(cinema.name, text, i):
+                found = True
+            else:
+                # Check if the word is present for all word breaks
+                for break_index in cinema.word_breaks:
+                    word = break_at(cinema.name, break_index)
+                    if word_present(word, text, i):
+                        word_break_index = break_index
+                        found = True
+                        break
+
+            if found:
+                entry_indicies.append(Entry(start_index=i, word_break=word_break_index))
+
+                if word_break_index is not None:
+                    logging.info(f"Found {break_at(cinema.name, word_break_index)} at index {i}.")
+                else:
+                    logging.info(f"Found {cinema.name} at index {i}.")
+
+    return entry_indicies
+
+
+def main(urls: List[str], cinemas: List[Cinema]):
     logging.info("Creating a directory for the artifacts.")
     # Ensure the directory exists
     os.makedirs('artifact', exist_ok=True)
@@ -49,9 +110,15 @@ def main(urls, cinemas):
                 exit(1)
 
             if len(text_items) > 0:
-                lines = map(lambda line: line.strip(), text_items[0].get_text().splitlines())
-                lines = list(filter(lambda line: any(cinema in line for cinema in cinemas), lines))
-                logging.info(lines)
+                # lines = map(lambda line: line.strip(), text_items[0].get_text().splitlines())
+                # lines = list(filter(lambda line: any(cinema in line for cinema in cinemas), lines))
+                # logging.info(lines)
+                text = text_items[0].get_text().replace('\n', ' ')
+                logging.info(text)
+
+                for cinema in cinemas:
+                    entry_indicies = find_cinema(cinema, text, word_break_separator='- ')
+
             else:
                 logging.error("Text items not found!")
         else:
