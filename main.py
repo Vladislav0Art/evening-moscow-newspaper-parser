@@ -12,6 +12,9 @@ urls = [
 ]
 
 
+CINEMA_EXCERPT_LENGTH = 100
+
+
 @dataclass
 class Cinema:
     name: str
@@ -131,6 +134,10 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
 
                     for cinema in cinemas:
                         entry_indicies = find_cinema(cinema, text, word_break_separator='- ')
+                        for entry in entry_indicies:
+                            excerpt = text[(entry.start_index - CINEMA_EXCERPT_LENGTH):entry.start_index]
+
+                            writer.writerow([cinema.name, date, excerpt, url])
 
                 else:
                     logging.error("Text items not found!")
