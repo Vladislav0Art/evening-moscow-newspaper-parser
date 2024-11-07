@@ -12,12 +12,6 @@ import argparse
 CINEMA_EXCERPT_LENGTH = 120
 
 
-# urls = [
-#     "https://electro.nekrasovka.ru/books/6173751/pages/4",
-#     "https://electro.nekrasovka.ru/books/6173753/pages/4",
-# ]
-
-
 @dataclass
 class Cinema:
     name: str
@@ -33,13 +27,6 @@ class Cinema:
             word_breaks = [i for i, _ in enumerate(name)]
         self.name = name
         self.word_breaks = word_breaks
-
-
-# cinemas: List[Cinema] = [
-#     Cinema(name="Метрополь"), # word_breaks=[2, 5, 6]
-#     Cinema(name="Ударник"),
-#     Cinema(name="Орион"),
-# ]
 
 
 logging.basicConfig(
