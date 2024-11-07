@@ -5,14 +5,17 @@ from dataclasses import dataclass
 import logging
 import os
 import csv
-
-urls = [
-    "https://electro.nekrasovka.ru/books/6173751/pages/4",
-    "https://electro.nekrasovka.ru/books/6173753/pages/4",
-]
+import json
+import sys
 
 
-CINEMA_EXCERPT_LENGTH = 100
+CINEMA_EXCERPT_LENGTH = 120
+
+
+# urls = [
+#     "https://electro.nekrasovka.ru/books/6173751/pages/4",
+#     "https://electro.nekrasovka.ru/books/6173753/pages/4",
+# ]
 
 
 @dataclass
@@ -21,19 +24,22 @@ class Cinema:
     word_breaks: List[int]
 
     def __init__(self, name: str, word_breaks: Union[List[int], None] = None):
-        # 'my|word'
-        #  01|23456 -> i = 1
+        """
+        Example of a word break indexing:
+        Put a break at sep: 'my|word'
+        Indexing:            01|2345 -> i = 1
+        """
         if word_breaks is None:
             word_breaks = [i for i, _ in enumerate(name)]
         self.name = name
         self.word_breaks = word_breaks
 
 
-cinemas: List[Cinema] = [
-    Cinema(name="Метрополь"), # word_breaks=[2, 5, 6]
-    Cinema(name="Ударник"),
-    Cinema(name="Орион"),
-]
+# cinemas: List[Cinema] = [
+#     Cinema(name="Метрополь"), # word_breaks=[2, 5, 6]
+#     Cinema(name="Ударник"),
+#     Cinema(name="Орион"),
+# ]
 
 
 logging.basicConfig(
@@ -102,6 +108,7 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
         breaks_str = ', '.join(map(lambda i: f"'{break_at(word=c.name, word_break=i, word_break_separator=sep)}'", c.word_breaks))
         logging.info(f"Provided cinema: '{c.name}'; breaks: [{breaks_str}]")
 
+    logging.info("=== Start collecting data from the URLs ===")
 
     with open(f"artifact/{filename_csv}", mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -171,6 +178,25 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
 
 if __name__ == "__main__":
     try:
+        input_filepath = 'input.json'
+        if len(sys.argv) > 1:
+            input_filepath = sys.argv[1]
+
+        logging.info(f"Reading the input file from '{input_filepath}'.")
+
+        with open(input_filepath, 'r') as file:
+            config = json.load(file)
+
+        urls = config.get("urls", [])
+        if len(urls) <= 0:
+            logging.warning(f'No "urls" array provided at \'{input_filepath}\'.')
+
+        cinema_names = config.get("cinemas", [])
+        if len(cinema_names) <= 0:
+            logging.warning(f'No "cinemas" array provided at \'{input_filepath}\'.')
+
+        cinemas = [Cinema(name=name) for name in cinema_names]
+
         main(urls, cinemas)
     except Exception as e:
         logging.error(e)
