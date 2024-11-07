@@ -6,7 +6,6 @@ import logging
 import os
 import csv
 import json
-import sys
 import argparse
 
 
