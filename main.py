@@ -7,6 +7,7 @@ import os
 import csv
 import json
 import sys
+import argparse
 
 
 CINEMA_EXCERPT_LENGTH = 120
@@ -178,9 +179,21 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
 
 if __name__ == "__main__":
     try:
-        input_filepath = 'input.json'
-        if len(sys.argv) > 1:
-            input_filepath = sys.argv[1]
+        parser = argparse.ArgumentParser(description='Parse cinema information from URLs.')
+        parser.add_argument('input_filepath', type=str, nargs='?', default='input.json', help="""
+            Path to the input JSON file.
+            The file format should be as follows:
+            {
+                "urls": ["url1", "url2"],
+                "cinemas": ["cinema1", "cinema2"]
+            }
+            Default: 'input.json'
+        """)
+
+        args = parser.parse_args()
+
+        # Read the parameters
+        input_filepath = args.input_filepath
 
         logging.info(f"Reading the input file from '{input_filepath}'.")
 
