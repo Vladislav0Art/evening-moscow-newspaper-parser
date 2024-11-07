@@ -11,7 +11,7 @@ with open('input.csv', 'r') as input, open('input.json') as file:
         config["urls"] = []
 
     for row in rows:
-        url, year, date = row
+        url = row[0]
         print("Read the row:", row)
         config["urls"].append(url)
 

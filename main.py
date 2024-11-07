@@ -118,9 +118,9 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
                 else:
                     logging.info(f"Extracted date: {date}")
 
-                os.makedirs(f'artifact/urls/{iteration}', exist_ok=True)
+                os.makedirs(f'artifact/urls/{date}', exist_ok=True)
 
-                html_filepath = f'artifact/urls/{iteration}/full-content.html'
+                html_filepath = f'artifact/urls/{date}/full-content.html'
                 with open(html_filepath, 'w') as file:
                     logging.info(f"Writing the full content to a file at '{html_filepath}'.")
                     file.write(soup.prettify())
@@ -139,7 +139,7 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
                     # logging.info(lines)
                     text = text_items[0].get_text().replace('\n', ' ')
 
-                    text_filepath = f'artifact/urls/{iteration}/text-content.txt'
+                    text_filepath = f'artifact/urls/{date}/text-content.txt'
                     with open(text_filepath, 'w') as file:
                         logging.info(f"Writing the text content from the target tag <pre> to a file at '{text_filepath}'.")
                         file.write(text)
