@@ -4,9 +4,11 @@ from typing import List, Union
 from dataclasses import dataclass
 import logging
 import os
+import csv
 
 urls = [
-    "https://electro.nekrasovka.ru/books/6173751/pages/4"
+    "https://electro.nekrasovka.ru/books/6173751/pages/4",
+    "https://electro.nekrasovka.ru/books/6173753/pages/4",
 ]
 
 
@@ -45,12 +47,12 @@ class Entry:
     start_index: int
     word_break: Union[int, None] = None
 
+
 def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[Entry]:
     entry_indicies: List[Entry] = []
 
     def word_present(word: str, text: str, start: int) -> bool:
-        len = len(word)
-        end = start + len
+        end = start + len(word)
         return text[start:end] == word
 
     def break_at(word: str, word_break: int) -> str:
@@ -83,46 +85,57 @@ def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[En
     return entry_indicies
 
 
-def main(urls: List[str], cinemas: List[Cinema]):
+def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv'):
     logging.info("Creating a directory for the artifacts.")
     # Ensure the directory exists
-    os.makedirs('artifact', exist_ok=True)
+    os.makedirs('artifact/urls', exist_ok=True)
 
-    for iteration, url in enumerate(urls):
-        logging.info(f"[Iteration {iteration}]: fetching URL {url}")
-        response = requests.get(url)
+    with open(f"artifact/{filename_csv}", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['cinema', 'date', 'title_excerpt', 'url'])
 
-        if response.status_code == 200:
-            logging.info("Page retrieved successfully.")
+        for iteration, url in enumerate(urls):
+            logging.info(f"[Iteration {iteration}]: fetching URL {url}")
+            response = requests.get(url)
 
-            soup = BeautifulSoup(response.text, 'html.parser')
+            if response.status_code == 200:
+                logging.info("Page retrieved successfully.")
 
-            with open(f'artifact/full-content-{iteration}.html', 'w') as file:
-                logging.info("Writing the full content to a file.")
-                file.write(soup.prettify())
+                soup = BeautifulSoup(response.text, 'html.parser')
 
-            text_items = soup.findAll("pre")
+                date = soup.find('div', class_='sc-flyd3z-5 bJFbFd').find('a').text.strip()
 
-            logging.info(f"Parsed {len(text_items)} text items.")
+                if date is None:
+                    logging.info("Date not found.")
+                else:
+                    logging.info(f"Extracted date: {date}")
 
-            if (len(text_items) > 1):
-                logging.error(f"Too many text items found: 1 expected, got {len(text_items)}")
-                exit(1)
+                with open(f'artifact/urls/full-content-{iteration}.html', 'w') as file:
+                    logging.info("Writing the full content to a file.")
+                    file.write(soup.prettify())
 
-            if len(text_items) > 0:
-                # lines = map(lambda line: line.strip(), text_items[0].get_text().splitlines())
-                # lines = list(filter(lambda line: any(cinema in line for cinema in cinemas), lines))
-                # logging.info(lines)
-                text = text_items[0].get_text().replace('\n', ' ')
-                logging.info(text)
+                text_items = soup.findAll("pre")
 
-                for cinema in cinemas:
-                    entry_indicies = find_cinema(cinema, text, word_break_separator='- ')
+                logging.info(f"Parsed {len(text_items)} text items.")
 
+                if (len(text_items) > 1):
+                    logging.error(f"Too many text items found: 1 expected, got {len(text_items)}")
+                    exit(1)
+
+                if len(text_items) > 0:
+                    # lines = map(lambda line: line.strip(), text_items[0].get_text().splitlines())
+                    # lines = list(filter(lambda line: any(cinema in line for cinema in cinemas), lines))
+                    # logging.info(lines)
+                    text = text_items[0].get_text().replace('\n', ' ')
+                    logging.info(text)
+
+                    for cinema in cinemas:
+                        entry_indicies = find_cinema(cinema, text, word_break_separator='- ')
+
+                else:
+                    logging.error("Text items not found!")
             else:
-                logging.error("Text items not found!")
-        else:
-            logging.error("Failed to retrieve the page.")
+                logging.error("Failed to retrieve the page.")
 
 
 
