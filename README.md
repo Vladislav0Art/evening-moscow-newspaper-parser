@@ -12,6 +12,8 @@ The script extracts text of the page scan available under the "Как текст
 
 The page scans available on the website **may NOT** reflect the actual content of the image in full, due to likely being automatically parsed from the image. Artifacts, misspelled text, and missing text excerpts occasionally occur. Therefore, this script **should NOT** be treated as a full-fledged one-click parsing solution but rather as a helping facility; **manual afford and proof-reading encouraged**.
 
+The implementation is crafted for the website version available on **7 Nov 2024**. Newer website versions may have different layouts, thus, the solution may not work as intended.
+
 
 
 # Instructions
@@ -125,6 +127,19 @@ Once the run succeeds you will see several artifacts generated:
         1. `title_excerpt`: This is a text excerpt **BEFORE** the occurance of the `cinema` under consideration (including the `cinema` itself). This `excerpt` is supposed to contain a name of a movie in the schedule.
         1. `url`: The URL a website of which was parsed in this entry.
     1. `artifacts/urls`: A folder that contains the contents of the webpages sorted by the corresponding dates. Each date folder contains two files: 1) `full-content.html` is the actual content of the webpage; 2) `text-content.txt` the text that corresponds to the textual representation of the newspaper release.
+
+Example of the output within `result.csv` (excerpt length was 120 symbols before the cinema name):
+```csv
+cinema,date,title_excerpt,url
+Метрополь,01.09.1953,"в $ ч. 30 м. вечера. Билеты продаются. 	sCOBETCHHH СПОРТ» № 8 — хроника, Новости вня, Наука и знание.  «АРЕНА СМЕЛЫХ» — Метрополь",https://electro.nekrasovka.ru/books/6173751/pages/4
+Ударник,01.09.1953,"» №№ АГ и 452 — Хроника, Науна и знание, Нинозал короткометражно- го фильма, Нозости дня.  <ПАРМСКАЯ ОБНТЕЛЬ» (i-n а — 	Ударник",https://electro.nekrasovka.ru/books/6173751/pages/4
+Метрополь,02.09.1953,"и знание, Кинозал короткометражно- го фильма, Новости дня;  «ПАРМСКАЯ ОБИТЕЛЬ» (1-я серия) — Ударник, Театр ниноактера, Метро- поль",https://electro.nekrasovka.ru/books/6173753/pages/4
+Орион,02.09.1953,"ой комиссии по перемирию 	«ИХ БЫЛО ПЯТЕРО» — Смена, Спар- тан. «Аквариум», Авангард. 	NE NE cara?  им. Моссовета, Уран, Орион",https://electro.nekrasovka.ru/books/6173753/pages/4
+Метрополь,03.09.1953,"и знание, Кинозал коротнометражно- го фильма, Новости BHA.  «ПАРМСНАЯ ОБИТЕЛЬ» (1-я серия) — Ударник, Театр киноактера, Метро- поль",https://electro.nekrasovka.ru/books/6173755/pages/4
+Метрополь,03.09.1953,", ПКиО «Сокольники», ЦПКиО им. Горького, сад им. Баумана, парн им. Дзержинского, Перексп, Форум, Линамо. 	«ЧУК И ГЕК» — Метрополь",https://electro.nekrasovka.ru/books/6173755/pages/4
+Ударник,03.09.1953,"№ 42 и 43 — Хроника, Наука и знание, Кинозал коротнометражно- го фильма, Новости BHA.  «ПАРМСНАЯ ОБИТЕЛЬ» (1-я серия) — Ударник",https://electro.nekrasovka.ru/books/6173755/pages/4
+Орион,03.09.1953," Ударник, Театр киноактера, Метро- поль, Художественный, Централь- ный, Москва, Таганский, Родина, им. Моссовета, Уран, Орион",https://electro.nekrasovka.ru/books/6173755/pages/4
+```
 
 ### Directions
 
