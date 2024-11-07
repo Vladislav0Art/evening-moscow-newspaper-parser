@@ -24,13 +24,13 @@ class Cinema:
         # 'my|word'
         #  01|23456 -> i = 1
         if word_breaks is None:
-            word_breaks = [i for i, _ in enumerate(name)] + [len(name)]
+            word_breaks = [i for i, _ in enumerate(name)]
         self.name = name
         self.word_breaks = word_breaks
 
 
 cinemas: List[Cinema] = [
-    Cinema(name="Метрополь", word_breaks=[2, 4, 6]),
+    Cinema(name="Метрополь"), # word_breaks=[2, 5, 6]
     Cinema(name="Ударник"),
     Cinema(name="Орион"),
 ]
@@ -51,15 +51,16 @@ class Entry:
     word_break: Union[int, None] = None
 
 
+def break_at(word: str, word_break: int, word_break_separator: str) -> str:
+    return word[:word_break] + word_break_separator + word[word_break:]
+
+
 def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[Entry]:
     entry_indicies: List[Entry] = []
 
     def word_present(word: str, text: str, start: int) -> bool:
         end = start + len(word)
         return text[start:end] == word
-
-    def break_at(word: str, word_break: int) -> str:
-        return word[:word_break] + word_break_separator + word[word_break:]
 
     for i in range(len(text)):
         if text[i] == cinema.name[0]:
@@ -71,7 +72,7 @@ def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[En
             else:
                 # Check if the word is present for all word breaks
                 for break_index in cinema.word_breaks:
-                    word = break_at(cinema.name, break_index)
+                    word = break_at(cinema.name, break_index, word_break_separator)
                     if word_present(word, text, i):
                         word_break_index = break_index
                         found = True
@@ -81,9 +82,10 @@ def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[En
                 entry_indicies.append(Entry(start_index=i, word_break=word_break_index))
 
                 if word_break_index is not None:
-                    logging.info(f"Found {break_at(cinema.name, word_break_index)} at index {i}.")
+                    broken_cinema = break_at(cinema.name, word_break_index, word_break_separator)
+                    logging.info(f"[Cinema]: Found '{broken_cinema}' at index {i}.")
                 else:
-                    logging.info(f"Found {cinema.name} at index {i}.")
+                    logging.info(f"[Cinema]: Found '{cinema.name}' at index {i}.")
 
     return entry_indicies
 
@@ -92,6 +94,14 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
     logging.info("Creating a directory for the artifacts.")
     # Ensure the directory exists
     os.makedirs('artifact/urls', exist_ok=True)
+
+    sep = '- '
+
+    # print out cinema names and their breaks
+    for c in cinemas:
+        breaks_str = ', '.join(map(lambda i: f"'{break_at(word=c.name, word_break=i, word_break_separator=sep)}'", c.word_breaks))
+        logging.info(f"Provided cinema: '{c.name}'; breaks: [{breaks_str}]")
+
 
     with open(f"artifact/{filename_csv}", mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -109,12 +119,16 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
                 date = soup.find('div', class_='sc-flyd3z-5 bJFbFd').find('a').text.strip()
 
                 if date is None:
-                    logging.info("Date not found.")
+                    logging.error("Date not found.")
+                    exit(1)
                 else:
                     logging.info(f"Extracted date: {date}")
 
-                with open(f'artifact/urls/full-content-{iteration}.html', 'w') as file:
-                    logging.info("Writing the full content to a file.")
+                os.makedirs(f'artifact/urls/{iteration}', exist_ok=True)
+
+                html_filepath = f'artifact/urls/{iteration}/full-content.html'
+                with open(html_filepath, 'w') as file:
+                    logging.info(f"Writing the full content to a file at '{html_filepath}'.")
                     file.write(soup.prettify())
 
                 text_items = soup.findAll("pre")
@@ -130,12 +144,21 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
                     # lines = list(filter(lambda line: any(cinema in line for cinema in cinemas), lines))
                     # logging.info(lines)
                     text = text_items[0].get_text().replace('\n', ' ')
-                    logging.info(text)
+
+                    text_filepath = f'artifact/urls/{iteration}/text-content.txt'
+                    with open(text_filepath, 'w') as file:
+                        logging.info(f"Writing the text content from the target tag <pre> to a file at '{text_filepath}'.")
+                        file.write(text)
 
                     for cinema in cinemas:
-                        entry_indicies = find_cinema(cinema, text, word_break_separator='- ')
+                        entry_indicies = find_cinema(cinema, text, word_break_separator=sep)
                         for entry in entry_indicies:
-                            excerpt = text[(entry.start_index - CINEMA_EXCERPT_LENGTH):entry.start_index]
+                            l = len(cinema.name)
+                            if entry.word_break is not None:
+                                broken_cinema_name = break_at(cinema.name, entry.word_break, word_break_separator=sep)
+                                l = len(broken_cinema_name)
+
+                            excerpt = text[(entry.start_index - CINEMA_EXCERPT_LENGTH):(entry.start_index + l)]
 
                             writer.writerow([cinema.name, date, excerpt, url])
 
