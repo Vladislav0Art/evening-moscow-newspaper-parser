@@ -8,7 +8,7 @@ The script extracts text of the page scan available under the "Как текст
 
 <img src="./assets/1.png" width="900px"/>
 
-## Thread of validity
+## Threat of validity
 
 The page scans available on the website **may NOT** reflect the actual content of the image in full, due to likely being automatically parsed from the image. Artifacts, misspelled text, and missing text excerpts occasionally occur. Therefore, this script **should NOT** be treated as a full-fledged one-click parsing solution but rather as a helping facility; **manual afford and proof-reading encouraged**.
 
