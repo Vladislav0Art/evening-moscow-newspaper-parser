@@ -55,18 +55,21 @@ def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[En
         end = start + len(word)
         return text[start:end] == word
 
+    cinema_name_lowercased = cinema.name.lower()
+    text_lowercased = text.lower()
+
     for i in range(len(text)):
-        if text[i] == cinema.name[0]:
+        if text_lowercased[i] == cinema_name_lowercased[0]:
             found = False
             word_break_index: Union[int, None] = None
 
-            if word_present(cinema.name, text, i):
+            if word_present(cinema_name_lowercased, text_lowercased, i):
                 found = True
             else:
                 # Check if the word is present for all word breaks
                 for break_index in cinema.word_breaks:
-                    word = break_at(cinema.name, break_index, word_break_separator)
-                    if word_present(word, text, i):
+                    word = break_at(cinema_name_lowercased, break_index, word_break_separator)
+                    if word_present(word, text_lowercased, i):
                         word_break_index = break_index
                         found = True
                         break
@@ -75,6 +78,7 @@ def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[En
                 entry_indicies.append(Entry(start_index=i, word_break=word_break_index))
 
                 if word_break_index is not None:
+                    # use non-lowercased cinema name due to logging
                     broken_cinema = break_at(cinema.name, word_break_index, word_break_separator)
                     logging.info(f"[Cinema]: Found '{broken_cinema}' at index {i}.")
                 else:
