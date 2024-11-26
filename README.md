@@ -104,6 +104,21 @@ For instance (a real example):
 
 Keep close attention to the URLs you provide: They should navigate to the **4th page of a particular newspaper release**. Open a link in the example about to better get the context.
 
+Alternatively use path to the input json `./timeline_input.json` with another format. 
+For instance:
+```json
+{
+    "time": [1953, 6, 1953, 9],
+    "cinemas": [
+        "Юный зритель",
+        "Искра",
+        "Стереокино"
+    ]
+}
+```
+Time should be provided in sequence: start year, start month, end year, end month. 
+
+
 2. Run with the default values (**expects a `input.json` file to be at the root folder**):
 ```bash
 make run

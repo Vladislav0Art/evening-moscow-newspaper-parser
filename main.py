@@ -38,6 +38,7 @@ logging.basicConfig(
     ]
 )
 
+
 @dataclass
 class Entry:
     start_index: int
@@ -48,7 +49,8 @@ def break_at(word: str, word_break: int, word_break_separator: str) -> str:
     return word[:word_break] + word_break_separator + word[word_break:]
 
 
-def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[Entry]:
+def find_cinema(cinema: Cinema, text: str,
+                word_break_separator: str) -> List[Entry]:
     entry_indicies: List[Entry] = []
 
     def word_present(word: str, text: str, start: int) -> bool:
@@ -68,26 +70,95 @@ def find_cinema(cinema: Cinema, text: str, word_break_separator: str) -> List[En
             else:
                 # Check if the word is present for all word breaks
                 for break_index in cinema.word_breaks:
-                    word = break_at(cinema_name_lowercased, break_index, word_break_separator)
+                    word = break_at(
+    cinema_name_lowercased,
+    break_index,
+     word_break_separator)
                     if word_present(word, text_lowercased, i):
                         word_break_index = break_index
                         found = True
                         break
 
             if found:
-                entry_indicies.append(Entry(start_index=i, word_break=word_break_index))
+                entry_indicies.append(
+    Entry(
+        start_index=i,
+         word_break=word_break_index))
 
                 if word_break_index is not None:
                     # use non-lowercased cinema name due to logging
-                    broken_cinema = break_at(cinema.name, word_break_index, word_break_separator)
-                    logging.info(f"[Cinema]: Found '{broken_cinema}' at index {i}.")
+                    broken_cinema = break_at(
+    cinema.name, word_break_index, word_break_separator)
+                    logging.info(
+                        f"[Cinema]: Found '{broken_cinema}' at index {i}.")
                 else:
-                    logging.info(f"[Cinema]: Found '{cinema.name}' at index {i}.")
+                    logging.info(
+                        f"[Cinema]: Found '{cinema.name}' at index {i}.")
 
     return entry_indicies
 
 
-def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv'):
+def parse_books_urls_to_json(year_start: int, month_start: int, year_end: int,
+                             month_end: int, cinemas: List[str], filename: str = 'timeline_output.json'):
+    if (year_start > year_end or (year_start ==
+        year_end and month_start > month_end)):
+        logging.error(
+            f"Bad timeline {year_start}, {month_start} - {year_end}, {month_end}")
+
+    sep = '- '
+    logging.info("=== Start collecting URLs ===")
+
+    BASE_URL = "https://electro.nekrasovka.ru"
+    API_START = "https://api.electro.nekrasovka.ru/api"
+    CINEMA_PAGE_POSTFIX = "/pages/4"
+    book_urls = []
+    dates = []
+
+    y = int(year_start)
+    m = int(month_start)
+    while (y < int(year_end) or (y == int(year_end) and m <= int(month_end))):
+        print(y, m, year_start, year_end, month_start, month_end)
+        limit = 20
+        offset = 0
+        while (limit > 0):
+            response = requests.get(
+                f"{API_START}/editions/1/{y}/{m}?limit={limit}&offset={offset}")
+            if response.status_code == 200:
+                logging.info(f"{y}, {m} retrieved successfully.") 
+
+                data = response.json()
+                urls = [item["url"] for item in data["response"]["items"]]
+                for url in urls:
+                    book_urls.append(BASE_URL + url + CINEMA_PAGE_POSTFIX)
+                    resp = requests.get(f'{API_START}{url}?lang=')
+                    print(f'{API_START}{url}?lang=')
+                    if resp.status_code == 200:
+                        logging.info(f"{url} date retrieved successfully.")
+                        dates.append(resp.json()["response"]["book_year"])
+                    else:
+                        logging.error("Failed to retrieve the book date.")
+            else:
+                logging.error("Failed to retrieve the page.")
+            offset = limit
+            limit = int(data["response"]["items_left"])
+        y = int(y)
+        m = int(m)
+        if (m == 12):
+            y += 1
+            m = 0
+        m += 1
+           
+    datas = {
+        "urls": book_urls,
+        "dates": dates,
+        "cinemas": cinemas
+    }
+        
+    with open(filename, 'w', encoding='utf-8') as json_file:
+        json.dump(datas, json_file, ensure_ascii=False, indent=4)
+
+
+def main(urls: List[str], dates: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv'):
     logging.info("Creating a directory for the artifacts.")
     # Ensure the directory exists
     os.makedirs('artifact/urls', exist_ok=True)
@@ -114,13 +185,7 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
 
                 soup = BeautifulSoup(response.text, 'html.parser')
 
-                date = soup.find('div', class_='sc-flyd3z-5 bJFbFd').find('a').text.strip()
-
-                if date is None:
-                    logging.error("Date not found.")
-                    exit(1)
-                else:
-                    logging.info(f"Extracted date: {date}")
+                date = dates[iteration]
 
                 os.makedirs(f'artifact/urls/{date}', exist_ok=True)
 
@@ -169,7 +234,7 @@ def main(urls: List[str], cinemas: List[Cinema], filename_csv: str = 'result.csv
 
 if __name__ == "__main__":
     try:
-        parser = argparse.ArgumentParser(description='Parse cinema information from URLs.')
+        parser = argparse.ArgumentParser(description='Parse cinema request')
         parser.add_argument('input_filepath', type=str, nargs='?', default='input.json', help="""
             Path to the input JSON file.
             The file format should be as follows:
@@ -179,11 +244,40 @@ if __name__ == "__main__":
             }
             Default: 'input.json'
         """)
-
+        
+        parser.add_argument('timeline_file', type=str, nargs='?', default='timeline_input.json', help="""
+            Path to the input JSON file.
+            The file format should be as follows:
+            {
+                "time": [year_start, month_start, year_end, month_end],
+                "cinemas": ["cinema1", "cinema2"]
+            }
+            Default: 'timeline_input.json'
+        """)
         args = parser.parse_args()
 
         # Read the parameters
+        if (args.timeline_file):
+            timeline_file = args.timeline_file
+        
+            logging.info(f"Reading the input file from '{timeline_file}'.")
+            
+            with open(timeline_file, 'r') as file:
+                config = json.load(file)
+                
+            cinema_names = config.get("cinemas", [])
+            times = config.get("time", [])
+            parse_books_urls_to_json(filename='input.json', 
+                                     cinemas=cinema_names,
+                                     year_start=times[0], 
+                                     month_start=times[1],
+                                     year_end=times[2], 
+                                     month_end=times[3])
+            
+            
+            
         input_filepath = args.input_filepath
+        
 
         logging.info(f"Reading the input file from '{input_filepath}'.")
 
@@ -191,15 +285,18 @@ if __name__ == "__main__":
             config = json.load(file)
 
         urls = config.get("urls", [])
+        dates = config.get("dates", [])
         if len(urls) <= 0:
             logging.warning(f'No "urls" array provided at \'{input_filepath}\'.')
-
         cinema_names = config.get("cinemas", [])
         if len(cinema_names) <= 0:
             logging.warning(f'No "cinemas" array provided at \'{input_filepath}\'.')
 
         cinemas = [Cinema(name=name) for name in cinema_names]
 
-        main(urls, cinemas)
+        main(urls, dates, cinemas)
+        
+            
+            
     except Exception as e:
         logging.error(e)
